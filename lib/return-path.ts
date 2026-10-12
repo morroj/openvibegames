@@ -1,0 +1,1 @@
+export function returnPath(value:unknown){if(typeof value!=='string'||!value.startsWith('/')||value.startsWith('//'))return '/account';try{const u=new URL(value,'https://local.invalid');return u.origin==='https://local.invalid'&&!['/signin','/signout'].includes(u.pathname)?u.pathname+u.search:'/account';}catch{return '/account';}}
