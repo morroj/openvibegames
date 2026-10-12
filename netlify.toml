@@ -3,3 +3,8 @@
   publish = ".next"
 [build.environment]
   NODE_VERSION = "22"
+
+# This project was connected before Next.js source existed. Explicitly install
+# the runtime so .next is converted to routes and Functions, not static files.
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
