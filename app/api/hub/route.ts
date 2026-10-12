@@ -1,9 +1,8 @@
-import {getGoogleUser} from '../../google-auth';
 import {db,gameQuery,safeEmbed,httpsUrl} from '../../data';
 export const dynamic='force-dynamic';
 const json=(v:unknown,status=200)=>Response.json(v,{status,headers:{'Cache-Control':'no-store'}});
-async function identity(){const u=await getGoogleUser();if(!u)return null;const d=db();await d.prepare('INSERT INTO profiles (id,auth_id,name,bio) VALUES (?,?,?,?) ON CONFLICT(auth_id) DO NOTHING').bind(crypto.randomUUID(),u.userId,u.fullName||'New creator','').run();return await d.prepare('SELECT id,name,bio FROM profiles WHERE auth_id=?').bind(u.userId).first<{id:string;name:string;bio:string}>();}
-export async function GET(req:Request){try{const d=db(),me=await identity(),url=new URL(req.url),profileId=url.searchParams.get('profile');let profile=null;
+async function identity(){const {getGoogleUser}=await import('../../google-auth');const u=await getGoogleUser();if(!u)return null;const d=db();await d.prepare('INSERT INTO profiles (id,auth_id,name,bio) VALUES (?,?,?,?) ON CONFLICT(auth_id) DO NOTHING').bind(crypto.randomUUID(),u.userId,u.fullName||'New creator','').run();return await d.prepare('SELECT id,name,bio FROM profiles WHERE auth_id=?').bind(u.userId).first<{id:string;name:string;bio:string}>();}
+export async function GET(req:Request){try{const d=db(),url=new URL(req.url),me=url.searchParams.get('account')==='1'?await identity():null,profileId=url.searchParams.get('profile');let profile=null;
  if(profileId){profile=await d.prepare('SELECT id,name,bio FROM profiles WHERE id=?').bind(profileId).first();if(!profile)return json({error:'Creator not found'},404);}
  const result=await d.prepare(gameQuery+" WHERE g.status='published' OR g.owner=? ORDER BY g.created DESC").bind(me?.id||'').all();return json({me,profile,games:result.results});}catch(e){console.error(e);return json({error:'The arcade is temporarily unavailable. Please try again.'},503);}}
 export async function POST(req:Request){try{

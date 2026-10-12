@@ -15,7 +15,13 @@ function SignIn({to='/account'}:{to?:string}){return <a className="button primar
 export default function Hub({mode='home',id,initialData=null}:{mode?:string;id?:string;initialData?:Data|null}){
 const reduced=useReducedMotion();
 const [data,setData]=useState<Data|null>(initialData),[error,setError]=useState(''),[busy,setBusy]=useState(false),[launched,setLaunched]=useState(false),[editing,setEditing]=useState<Game|null>(null),[profileEdit,setProfileEdit]=useState(false),[selected,setSelected]=useState(0);
-async function refresh(){const r=await fetch('/api/hub'+(mode==='creator'?'?profile='+encodeURIComponent(id||''):''));const d=await r.json() as Data & {error?:string};if(!r.ok)throw new Error(d.error);setData(d);}
+async function refresh(){
+ const read=async(path:string)=>{const r=await fetch(path,{cache:'no-store'});if(!r.headers.get('content-type')?.includes('application/json'))throw new Error('The game service is unavailable. Please try again.');const d=await r.json() as Data & {error?:string};if(!r.ok)throw new Error(d.error);return d;};
+ if(mode==='account'||mode==='submit'){setData(await read('/api/hub?account=1'));return;}
+ const publicData=await read('/api/hub'+(mode==='creator'?'?profile='+encodeURIComponent(id||''):''));setData(publicData);
+ // Optional account enrichment must never hide a public game or prevent playing.
+ if(mode==='game'){try{setData(await read('/api/hub?account=1'));}catch{/* Public details and play remain available when auth fails. */}}
+}
 useEffect(()=>{refresh().catch(e=>setError(e.message));},[mode,id]);
 useEffect(()=>{if(launched)document.getElementById('game-player')?.scrollIntoView({behavior:reduced?'instant':'smooth',block:'start'});},[launched,reduced]);
 useEffect(()=>{const mc=(document as unknown as {modelContext?:{registerTool:(t:unknown,o:unknown)=>Promise<void>}}).modelContext;if(!mc)return;const lifecycle=new AbortController();Promise.resolve(mc.registerTool({name:'start_game_submission',description:'Open the game submission form. Does not publish a game.',inputSchema:{type:'object',properties:{},additionalProperties:false},annotations:{readOnlyHint:false},execute:(input:unknown)=>{if(!input||typeof input!=='object'||Object.keys(input).length)throw new Error('Expected an empty object');window.location.assign('/submit');return {opened:'/submit'};}},{signal:lifecycle.signal})).catch(()=>{});return()=>lifecycle.abort();},[]);

@@ -1,5 +1,13 @@
 # openvibegames
 
+## Public browsing and authentication boundaries
+
+The homepage, published game details, public creator profiles and game launches are public. `GET /api/hub` never invokes Google authentication and never creates a profile. `GET /api/hub?account=1` explicitly loads the signed-in account and its unpublished games. Game pages optionally enrich public data with account data; authentication failure cannot replace the public game with an error. Profile edits, submissions, ratings and visibility changes still require a verified Google session and owner checks where applicable.
+
+Netlify's project access protection runs before the application. For a publicly browsable production site, go to Project configuration → General → Visitor access → Project visibility and make production Public. If previews need protection, apply it to Previews only. Google OAuth is an application-level sign-in flow; it should not be used as Netlify's site-wide login gate. This setting cannot be overridden by application code or netlify.toml.
+
+Deploy this repository's complete root application through the connected GitHub main branch. A manually uploaded README-only folder or a ready preview without a successful Next.js build does not validate this application. Use the deploy log and commit identity to verify the correct source; then check `/` and `/api/hub` without a session before testing sign-in. Keep the existing Netlify Database and migration.
+
 Student-made browser games with cinematic discovery, 5-second sliding rows, playable itch.io embeds, Google accounts, creator profiles, ratings and play counts. New submissions publish immediately.
 
 ## Deploy with GitHub and Netlify
